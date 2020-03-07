@@ -1,17 +1,30 @@
 #!/usr/bin/env python3
 
+##################################################
+ # Soubor: ipkserver.py
+ # Projekt c. 1 - HTTP resolver doménových jmen
+ # Autor: Marek Ziska, xziska03@stud.fit.vutbr.cz
+ # Skupina: 2BIB
+ # Datum 08.03.2020
+##################################################
+
 import socket
 import re
 import sys
 
-HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
+HOST = '127.0.0.1'
 if 0 < int(sys.argv[1]) < 65535:
-    PORT = int(sys.argv[1])      # Port to listen on (non-privileged ports are > 1023)
+    PORT = int(sys.argv[1])
 else:
     print("Unsupported port, please use int in range of uint16!", file=sys.stderr)
     sys.exit()
 DONE = True
 
+####
+ # Sets up socket object for various socket system calls, listens to any connections
+ # incoming to {PORT}, receives data from this connections and sends them further for
+ # parsing.
+####
 def main():
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -24,13 +37,16 @@ def main():
                     print('Connected by', addr)
                     while True:
                         data = conn.recv(1025)
-                        if not data or parse(data, conn):
+                        if not data or parse_done(data, conn):
                             break
     except KeyboardInterrupt:
         print("\nQuitting...")
     finally:
         exit()
 
+####
+ # Checks correctness of an IP
+####
 def ip_format(ip):
     try:
         socket.inet_pton(socket.AF_INET, ip)
@@ -38,6 +54,9 @@ def ip_format(ip):
         return False
     return True
 
+####
+ # Resolves host name to ip, constructs final form of server response
+####
 def resolve_host_name(host):
     if ip_format(host):
         print("Wrong combination of operands!")
@@ -49,6 +68,9 @@ def resolve_host_name(host):
         return "404"
     return host + ':A=' + host_ip
 
+####
+ # Resolves ip to host name, constructs final form of server response
+####
 def resolve_host_ip(ip):
     if not ip_format(ip):
         print("Wrong combination of operands!")
@@ -60,6 +82,9 @@ def resolve_host_ip(ip):
         return "404"
     return ip + ':PTR=' + host_name[0]
 
+####
+ # Sends response to client according to correctness of a request and used method
+####
 def send_response(response, conn, response_cat):
     if response == "400":
         conn.sendall(bytes("\rHTTP/1.1 400 Bad Request\r\n", "UTF-8"))
@@ -72,6 +97,9 @@ def send_response(response, conn, response_cat):
     else:
         conn.sendall(bytes("HTTP/1.1 200 OK\r\n\r\n" + response + "\r\n", "UTF-8"))
 
+####
+ # Processing GET request, parsing host/ip and contemplating final response
+####
 def response_get(fields, conn):
     byte_string = fields[1].decode('utf-8')
     match = re.search("^/resolve\?name=.*&type=.*$", byte_string)
@@ -94,6 +122,9 @@ def response_get(fields, conn):
 
     send_response(response)
 
+####
+ # Processing POST request, parsing host/ip and contemplating final response
+####
 def response_post(conn, data):
     fields = data.decode('utf-8').split("\r\n\r\n")
     hosts = fields[-1].split("\n")
@@ -137,14 +168,11 @@ def response_post(conn, data):
 
     send_response(response, conn, response_cat)
 
-def check_http_type(line):
-    line = line.strip()
-    if line == 'HTTP/1.1' or line == 'HTTP/1.0':
-        return line
-    else:
-        return None
-
-def parse(data, conn):
+####
+ # Parsing request according to used method(either GET or POST)
+ # and checks if incoming request isn't empty.
+####
+def parse_done(data, conn):
     fields = data.split()
     if fields[0].decode('utf-8') == 'GET':
         response_get(fields, conn)
