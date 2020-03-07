@@ -1,12 +1,16 @@
 # IPK - Počítačové komunikace a sítě
+
 ##Projekt 1 - HTTP resolver doménových jmen
+
 ###Popis varianty:
 První projekt očekává samostatné vypracování zadané úlohy z oblasti programování klient-server síťových aplikací. 
 Předpokládá se použití základních knihoven a prostředků pro programování síťových soketů. 
 Cílem projektu je implementace severu, který bude komunikovat protokolem HTTP a bude zajišťovat překlad doménových jmen. 
 Pro překlad jmen bude server používat lokální resolver stanice na které běží - užijte přímo API, které poskytuje OS 
 (například getnameinfo, getaddrinfo pro C/C++). 
+
 ###Stručný popis riešenia
+
 ####Makefile
 Podporuje dva argumenty: 
 ```terminal
@@ -19,6 +23,7 @@ $ make run PORT=1234
 ```
 Spustí server a určí PORT na ktorom bude server bežať. PORT by malo byť
 celočíselné číslo v rozmedzí uint_16.
+
 ####Funkcie
 * main() -
 Vytvorí objekt socketu, nastavuje možnosť okamžitého znovupoužitia socketu ktoré
