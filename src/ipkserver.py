@@ -85,22 +85,22 @@ def resolve_host_ip(ip):
 ####
  # Sends response to client according to correctness of a request and used method
 ####
-def send_response(response, conn, response_cat):
+def send_response(response, conn, response_cat, http_type):
     if response == "400":
-        conn.sendall(bytes("\rHTTP/1.1 400 Bad Request\r\n", "UTF-8"))
+        conn.sendall(bytes("\r" + http_type + " 400 Bad Request\r\n\r\n", "UTF-8"))
     elif response == "404":
-        conn.sendall(bytes("\rHTTP/1.1 404 Not Found\r\n", "UTF-8"))
+        conn.sendall(bytes("\r" + http_type + " 404 Not Found\r\n\r\n", "UTF-8"))
     elif response == "200post":
-        conn.sendall(bytes("\rHTTP/1.1 200 OK \r\n\r\n", "UTF-8"))
+        conn.sendall(bytes("\r" + http_type + " 200 OK \r\n\r\n", "UTF-8"))
         for line in response_cat:
             conn.sendall(bytes(line + "\r\n", "UTF-8"))
     else:
-        conn.sendall(bytes("HTTP/1.1 200 OK\r\n\r\n" + response + "\r\n", "UTF-8"))
+        conn.sendall(bytes("\r" + http_type + " 200 OK\r\n\r\n" + response + "\r\n", "UTF-8"))
 
 ####
  # Processing GET request, parsing host/ip and contemplating final response
 ####
-def response_get(fields, conn):
+def response_get(fields, conn, http_type):
     byte_string = fields[1].decode('utf-8')
     match = re.search("^/resolve\?name=.*&type=.*$", byte_string)
     if not match:
@@ -120,12 +120,12 @@ def response_get(fields, conn):
         response = "400"
         print('Unknown request type', file=sys.stderr)
 
-    send_response(response)
+    send_response(response, conn, None, http_type)
 
 ####
  # Processing POST request, parsing host/ip and contemplating final response
 ####
-def response_post(conn, data):
+def response_post(conn, data, http_type):
     fields = data.decode('utf-8').split("\r\n\r\n")
     hosts = fields[-1].split("\n")
     count = 0
@@ -166,7 +166,7 @@ def response_post(conn, data):
                 print('Unknown request type!', file=sys.stderr)
                 response = "400"
 
-    send_response(response, conn, response_cat)
+    send_response(response, conn, response_cat, http_type)
 
 ####
  # Parsing request according to used method(either GET or POST)
@@ -174,14 +174,15 @@ def response_post(conn, data):
 ####
 def parse_done(data, conn):
     fields = data.split()
+    http_type = fields[2].decode('utf-8')
     if fields[0].decode('utf-8') == 'GET':
-        response_get(fields, conn)
+        response_get(fields, conn, http_type)
     elif fields[0].decode('utf-8') == 'POST':
-        response_post(conn, data)
+        response_post(conn, data, http_type)
     elif int((fields[-3].decode('utf-8'))) == 0:
-        conn.sendall(bytes("\rHTTP/1.1 400 Bad Request\r\n", "UTF-8"))
+        conn.sendall(bytes("\r" + http_type + " 400 Bad Request\r\n", "UTF-8"))
     else:
-        conn.sendall(bytes("\rHTTP/1.1 405 Method Not Allowed\r\n", "UTF-8"))
+        conn.sendall(bytes("\r" + http_type + " 405 Method Not Allowed\r\n", "UTF-8"))
     conn.close()
     return DONE
 

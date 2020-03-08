@@ -2,4 +2,4 @@
 build:
 
 run:
-	python ipkserver.py $(PORT)
+	python3 src/ipkserver.py $(PORT)
